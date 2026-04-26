@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Budget & Comptes — Marc</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+  :root{--bg:#0d1117;--surface:#161b22;--surface2:#1f2937;--border:#2d3748;--accent:#00d4aa;--accent2:#f59e0b;--danger:#ef4444;--success:#22c55e;--warning:#f59e0b;--text:#e2e8f0;--muted:#718096;--card:#1a2332}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;font-size:15px}
+  .nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 env(safe-area-inset-bottom,12px)}
+  .nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px;border:none;background:none;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:10px;transition:color .2s}
+  .nav-btn.active{color:var(--accent)}
+  .nav-btn svg{width:22px;height:22px}
+  .page{display:none;padding:16px 16px 100px;min-height:100vh}
+  .page.active{display:block}
+  .page-header{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,var(--accent),#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .page-sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+  .card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px}
+  .balance-hero{background:linear-gradient(135deg,#0f3460,#0d1f3c);border:1px solid #1e3a5f;border-radius:20px;padding:24px 20px;margin-bottom:16px;position:relative;overflow:hidden}
+  .balance-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:radial-gradient(circle,rgba(0,212,170,.15),transparent 70%);border-radius:50%}
+  .balance-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+  .balance-amount{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--accent);line-height:1.1;margin:4px 0 16px}
+  .balance-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .balance-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px}
+  .balance-item-label{font-size:11px;color:var(--muted)}
+  .balance-item-val{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-top:2px}
+  .green{color:var(--success)}.red{color:var(--danger)}.orange{color:var(--warning)}
+  .prog-wrap{margin-top:10px}
+  .prog-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+  .prog-bar{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden}
+  .prog-fill{height:100%;border-radius:99px;transition:width .5s ease}
+  .debt-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+  .debt-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+  .debt-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+  .debt-badge{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600;letter-spacing:.05em;white-space:nowrap}
+  .debt-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+  .debt-stat{background:var(--surface2);border-radius:10px;padding:8px 10px}
+  .debt-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .debt-stat-val{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-top:2px}
+  .debt-actions{display:flex;gap:8px;margin-top:12px}
+  .btn-action{flex:1;padding:10px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+  .btn-action:active{opacity:.7}
+  .btn-action.primary{background:rgba(0,212,170,.12);border-color:var(--accent);color:var(--accent)}
+  .btn-action.success{background:rgba(34,197,94,.12);border-color:var(--success);color:var(--success)}
+  .history-toggle{font-size:12px;color:var(--accent);cursor:pointer;margin-top:10px;display:flex;align-items:center;gap:4px;user-select:none}
+  .history-list{margin-top:10px;display:none;border-top:1px solid var(--border);padding-top:10px}
+  .history-list.open{display:block}
+  .history-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--surface2);border-radius:10px;margin-bottom:6px}
+  .history-item-left{font-size:13px}
+  .history-item-date{font-size:11px;color:var(--muted)}
+  .history-item-right{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;flex-shrink:0;margin-left:8px}
+  .timeline{position:relative;padding-left:24px}
+  .timeline::before{content:'';position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:var(--border)}
+  .tl-item{position:relative;margin-bottom:16px}
+  .tl-dot{position:absolute;left:-20px;top:4px;width:12px;height:12px;border-radius:50%;border:2px solid var(--bg)}
+  .tl-date{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  .tl-text{font-size:14px;font-weight:500;margin-top:2px}
+  .tl-amount{font-family:'Syne',sans-serif;font-size:13px;color:var(--success)}
+  .month-header{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px}
+  .tx-item{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:background .15s}
+  .tx-item:active{background:var(--border)}
+  .tx-info{flex:1;margin:0 10px}
+  .tx-name{font-size:14px;font-weight:500}
+  .tx-date-lbl{font-size:11px;color:var(--muted);margin-top:1px}
+  .tx-amt{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+  .year-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .month-card{background:var(--surface2);border-radius:12px;padding:12px;border-left:3px solid var(--border)}
+  .month-card.bonus{border-left-color:var(--accent2)}
+  .month-name{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted)}
+  .month-total{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-top:4px}
+  .month-extra{font-size:11px;color:var(--accent2);margin-top:2px}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:flex-end}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface);border-radius:24px 24px 0 0;padding:24px 20px 44px;width:100%;animation:slideUp .25s ease;max-height:90vh;overflow-y:auto}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .modal-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:16px}
+  .form-group{margin-bottom:14px}
+  .form-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:block}
+  .form-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color .2s;-webkit-appearance:none}
+  .form-input:focus{border-color:var(--accent)}
+  .tab-toggle{display:flex;gap:8px;margin-bottom:20px}
+  .tab-btn{flex:1;padding:10px;border-radius:12px;border:2px solid var(--border);background:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+  .tab-btn.active-blue{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.1)}
+  .tab-btn.active-green{border-color:var(--success);color:var(--success);background:rgba(34,197,94,.1)}
+  .tab-btn.active-income{border-color:var(--success);color:var(--success);background:rgba(34,197,94,.1)}
+  .tab-btn.active-expense{border-color:var(--danger);color:var(--danger);background:rgba(239,68,68,.1)}
+  .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .cat-btn{background:var(--surface2);border:2px solid transparent;border-radius:12px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:10px;transition:border-color .15s;color:var(--text);font-family:'DM Sans',sans-serif}
+  .cat-btn span{font-size:20px}
+  .cat-btn.selected{border-color:var(--accent);background:rgba(0,212,170,.1)}
+  .btn-primary{width:100%;padding:16px;background:var(--accent);border:none;border-radius:14px;color:#0d1117;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px}
+  .btn-success{width:100%;padding:16px;background:var(--success);border:none;border-radius:14px;color:#0d1117;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px}
+  .btn-secondary{width:100%;padding:14px;background:none;border:1px solid var(--border);border-radius:14px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:15px;cursor:pointer;margin-top:8px}
+  .fab{position:fixed;bottom:80px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--accent);border:none;color:#0d1117;font-size:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,212,170,.4);z-index:50;transition:transform .15s}
+  .fab:active{transform:scale(.93)}
+  .strategy-card{background:linear-gradient(135deg,#1a2f1a,#0d1f0d);border:1px solid #2d5a2d;border-radius:16px;padding:14px;margin-bottom:10px}
+  .priority-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+  .info-box{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;margin-top:10px}
+  .total-banner{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#1f0d0d,#2d1a1a);border:1px solid #7f1d1d;border-radius:16px;padding:16px;margin-bottom:16px}
+  .total-banner-label{font-size:12px;color:#fca5a5;text-transform:uppercase;letter-spacing:.08em}
+  .total-banner-val{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#ef4444}
+  .total-banner-saved{font-size:12px;color:var(--success);margin-top:4px}
+  .row-list{display:flex;flex-direction:column;gap:8px}
+  .row-item{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:12px;padding:12px 14px}
+  .row-left{display:flex;align-items:center;gap:10px}
+  .row-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .row-name{font-size:14px;font-weight:500}
+  .row-sub{font-size:11px;color:var(--muted);margin-top:1px}
+  .row-amount{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+  hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
+  ::-webkit-scrollbar{width:0}
+</style>
+</head>
+<body>
+
+<div id="page-dashboard" class="page active">
+  <div class="page-header">Bonjour Marc 👋</div>
+  <div class="page-sub">Tableau de bord — temps réel</div>
+  <div class="balance-hero">
+    <div class="balance-label">Reste à vivre mensuel</div>
+    <div class="balance-amount" id="dash-reste">—</div>
+    <div class="balance-grid">
+      <div class="balance-item"><div class="balance-item-label">Revenus fixes</div><div class="balance-item-val green">5 200 €</div></div>
+      <div class="balance-item"><div class="balance-item-label">Charges totales</div><div class="balance-item-val red" id="dash-charges">—</div></div>
+      <div class="balance-item"><div class="balance-item-label">Taux endettement</div><div class="balance-item-val orange" id="dash-ratio">—</div></div>
+      <div class="balance-item"><div class="balance-item-label">Dette totale</div><div class="balance-item-val red" id="dash-total">—</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Répartition des charges</div>
+    <div class="row-list">
+      <div class="row-item"><div class="row-left"><div class="row-icon" style="background:#1a3a2a">🏦</div><div><div class="row-name">Crédits actifs</div><div class="row-sub" id="dash-credits-sub">—</div></div></div><div class="row-amount red" id="dash-credits-val">—</div></div>
+      <div class="row-item"><div class="row-left"><div class="row-icon" style="background:#3a1a1a">💔</div><div><div class="row-name">Pension compensatoire</div><div class="row-sub">Jusqu'à oct. 2026</div></div></div><div class="row-amount red">1 100 €</div></div>
+      <div class="row-item"><div class="row-left"><div class="row-icon" style="background:#1a2a3a">🚗</div><div><div class="row-name">Transport</div><div class="row-sub">Autoroute + Essence + Assurance</div></div></div><div class="row-amount orange">593 €</div></div>
+      <div class="row-item"><div class="row-left"><div class="row-icon" style="background:#2a1a3a">🏠</div><div><div class="row-name">Vie du foyer</div><div class="row-sub">Eau, électricité, etc.</div></div></div><div class="row-amount orange">200 €</div></div>
+      <div class="row-item"><div class="row-left"><div class="row-icon" style="background:#1a2a1a">📱</div><div><div class="row-name">Abonnements</div><div class="row-sub">Netflix + Tél + Basic-Fit</div></div></div><div class="row-amount" style="color:var(--muted)">~57 €</div></div>
+      <div class="row-item"><div class="row-left"><div class="row-icon" style="background:#1a2a2a">💰</div><div><div class="row-name">Épargne Revolut</div><div class="row-sub">Mise de côté mensuelle</div></div></div><div class="row-amount green">400 €</div></div>
+    </div>
+  </div>
+  <div class="card" style="border-color:#7f1d1d;background:linear-gradient(135deg,#1f0d0d,#1a1010)">
+    <div class="card-title" style="color:#fca5a5">🚨 Action prioritaire</div>
+    <p style="font-size:14px;line-height:1.6;color:#fcd5d5">Le crédit revolving est le plus coûteux. Va dans <strong style="color:#00d4aa">Dettes</strong> pour enregistrer tes remboursements.</p>
+  </div>
+</div>
+
+<div id="page-debts" class="page">
+  <div class="page-header">Mes crédits</div>
+  <div class="page-sub">Mis à jour en temps réel</div>
+  <div class="total-banner">
+    <div><div class="total-banner-label">Reste à rembourser</div><div class="total-banner-val" id="total-dette-val">—</div><div class="total-banner-saved" id="total-economise">—</div></div>
+    <div style="text-align:right"><div style="font-size:11px;color:var(--muted)">Mensualités</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--danger)" id="total-mensualites">—</div></div>
+  </div>
+  <div id="credits-container"></div>
+</div>
+
+<div id="page-income" class="page">
+  <div class="page-header">Revenus annuels</div>
+  <div class="page-sub">Calendrier & primes 2026</div>
+  <div class="card" style="background:linear-gradient(135deg,#0f2a1f,#0d1f17);border-color:#2d5a3d">
+    <div class="card-title" style="color:#4ade80">Revenus totaux 2026</div>
+    <div style="font-family:'Syne',sans-serif;font-size:38px;font-weight:800;color:var(--success)">67 100 €</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px">dont 4 700 € de primes exceptionnelles</div>
+  </div>
+</div>
+
+<div id="page-tx" class="page">
+  <div class="page-header">Comptes</div>
+  <div class="page-sub">Suivi mensuel</div>
+  <div class="card" style="padding:14px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:12px;color:var(--muted)">Solde du mois</div><div class="balance-amount" style="font-size:28px;margin:4px 0 0" id="month-balance">+0 €</div></div>
+      <div style="text-align:right"><div style="font-size:12px;color:var(--success)">Entrées : <span id="month-in" style="font-weight:700">0 €</span></div><div style="font-size:12px;color:var(--danger);margin-top:4px">Sorties : <span id="month-out" style="font-weight:700">0 €</span></div></div>
+    </div>
+  </div>
+  <div id="tx-list"><div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:40px;margin-bottom:8px">📋</div><div>Aucune transaction</div><div style="font-size:12px;margin-top:4px">Appuie sur + pour ajouter</div></div></div>
+</div>
+
+<div id="page-strategy" class="page">
+  <div class="page-header">Plan désendettement</div>
+  <div class="page-sub">Méthode avalanche optimisée</div>
+  <div class="card" style="background:linear-gradient(135deg,#0f1f3a,#0d1628);border-color:#1e3a5f;text-align:center;padding:24px">
+    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Score santé financière</div>
+    <div style="font-family:'Syne',sans-serif;font-size:64px;font-weight:800;color:#f59e0b;line-height:1;margin:8px 0" id="score-val">—</div>
+    <div style="font-size:14px;color:var(--muted)">/100 — Situation gérable</div>
+    <div class="prog-bar" style="margin-top:14px"><div class="prog-fill" id="score-bar" style="width:0%;background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e)"></div></div>
+  </div>
+</div>
+
+<button class="fab" id="fab-btn" onclick="openTxModal()" style="display:none">+</button>
+
+<div class="modal-overlay" id="modal-tx" onclick="if(event.target===this)closeTxModal()">
+  <div class="modal">
+    <div class="modal-title">Nouvelle transaction</div>
+    <div class="tab-toggle">
+      <button class="tab-btn active-income" id="btn-income" onclick="setType('income')">📈 Entrée</button>
+      <button class="tab-btn" id="btn-expense" onclick="setType('expense')">📉 Sortie</button>
+    </div>
+    <div class="form-group"><label class="form-label">Montant (€)</label><input type="number" class="form-input" id="tx-amount" placeholder="0,00" inputmode="decimal"></div>
+    <div class="form-group"><label class="form-label">Description</label><input type="text" class="form-input" id="tx-desc" placeholder="Ex : Carburant, Salaire..."></div>
+    <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="tx-date"></div>
+    <button class="btn-primary" onclick="addTransaction()">Enregistrer</button>
+    <button class="btn-secondary" onclick="closeTxModal()">Annuler</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-credit" onclick="if(event.target===this)closeCreditModal()">
+  <div class="modal">
+    <div class="modal-title" id="credit-modal-title">Mettre à jour</div>
+    <div class="tab-toggle">
+      <button class="tab-btn active-blue" id="tab-btn-solde" onclick="setCreditTab('solde')">✏️ Modifier solde</button>
+      <button class="tab-btn" id="tab-btn-anticipe" onclick="setCreditTab('anticipe')">💸 Rembt anticipé</button>
+    </div>
+    <div id="tab-solde">
+      <div class="form-group"><label class="form-label">Nouveau solde restant (€)</label><input type="number" class="form-input" id="credit-new-solde" placeholder="Ex : 9 250,00" inputmode="decimal"></div>
+      <div class="form-group"><label class="form-label">Date du relevé</label><input type="date" class="form-input" id="credit-solde-date"></div>
+      <div class="form-group"><label class="form-label">Note</label><input type="text" class="form-input" id="credit-solde-note"></div>
+      <button class="btn-primary" onclick="saveCreditSolde()">✅ Enregistrer le solde</button>
+    </div>
+    <div id="tab-anticipe" style="display:none">
+      <div class="form-group"><label class="form-label">Montant remboursé (€)</label><input type="number" class="form-input" id="credit-anticipe-amount" placeholder="Ex : 1 200,00" inputmode="decimal"></div>
+      <div class="form-group"><label class="form-label">Date du remboursement</label><input type="date" class="form-input" id="credit-anticipe-date"></div>
+      <div class="form-group"><label class="form-label">Note</label><input type="text" class="form-input" id="credit-anticipe-note"></div>
+      <button class="btn-success" onclick="saveCreditAnticipe()">💸 Enregistrer le remboursement</button>
+    </div>
+    <button class="btn-secondary" onclick="closeCreditModal()">Annuler</button>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('dashboard',this)">📊<span>Tableau</span></button>
+  <button class="nav-btn" onclick="showPage('debts',this)">🏦<span>Dettes</span></button>
+  <button class="nav-btn" onclick="showPage('income',this)">💶<span>Revenus</span></button>
+  <button class="nav-btn" onclick="showPage('tx',this)">📋<span>Comptes</span></button>
+  <button class="nav-btn" onclick="showPage('strategy',this)">📈<span>Stratégie</span></button>
+</nav>
+
+<script>
+const CREDITS_INIT = [
+  { id:'revolving', nom:'Crédit Revolving', emoji:'🔄', soldeInitial:9800, mensualite:299, taeg:8.65, echeance:'Déc. 2026', badge:'PRIORITÉ 1', badgeBg:'#7f1d1d', badgeColor:'#fca5a5', barColor:'#ef4444', info:'💡 Utilise tes primes 2026 pour solder ce crédit en priorité.' },
+  { id:'auto', nom:'Crédit Auto', emoji:'🚗', soldeInitial:7725.78, mensualite:389, taeg:null, echeance:'Déc. 2027', badge:'PRIORITÉ 2', badgeBg:'#1e3a5f', badgeColor:'#93c5fd', barColor:'#3b82f6', info:null },
+  { id:'conso', nom:'Crédit Consommation', emoji:'🛒', soldeInitial:4956.78, mensualite:106.5, taeg:null, echeance:'Fév. 2031', badge:'PRIORITÉ 3', badgeBg:'#2d1a4a', badgeColor:'#c4b5fd', barColor:'#8b5cf6', info:null },
+  { id:'habitation', nom:'Habitation Loisirs', emoji:'🏠', soldeInitial:43000, mensualite:667.21, taeg:null, echeance:'Fév. 2033', badge:'LONG TERME', badgeBg:'#1a2f1a', badgeColor:'#86efac', barColor:'#22c55e', info:null }
+];
+
+const STORAGE_CREDITS = 'marc_credits3';
+let credits = JSON.parse(localStorage.getItem(STORAGE_CREDITS) || 'null');
+if (!credits) {
+  credits = {};
+  CREDITS_INIT.forEach(c => { credits[c.id] = { solde: c.soldeInitial, historique: [] }; });
+  saveCredits();
+}
+let transactions = JSON.parse(localStorage.getItem('marc_tx') || '[]');
+let currentType = 'income';
+let currentCat = { icon:'📦', name:'Autre' };
+let editingCreditId = null;
+
+function saveCredits() { localStorage.setItem(STORAGE_CREDITS, JSON.stringify(credits)); }
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  document.getElementById('fab-btn').style.display = (id === 'tx') ? 'flex' : 'none';
+  if (id === 'tx') renderTransactions();
+  if (id === 'debts') renderDebts();
+  if (id === 'dashboard' || id === 'strategy') updateDashboard();
+}
+
+function renderDebts() {
+  const container = document.getElementById('credits-container');
+  let html = '', totalDette = 0, totalMensualites = 0, totalRembourse = 0;
+  CREDITS_INIT.forEach(c => {
+    if(!credits[c.id]) credits[c.id] = { solde: c.soldeInitial, historique: [] };
+    const state = credits[c.id];
+    const solde = Math.max(0, Number(state.solde) || 0);
+    const rembourse = Math.max(0, c.soldeInitial - solde);
+    const pct = Math.min(100, (rembourse / c.soldeInitial) * 100);
+    totalDette += solde;
+    totalRembourse += rembourse;
+    if (solde > 0) totalMensualites += c.mensualite;
+    const hist = state.historique || [];
+    const majLabel = hist.length ? 'Màj : ' + fmtDate(hist[hist.length-1].date) : 'Pas de mise à jour';
+    const histHtml = hist.length === 0
+      ? '<div style="font-size:13px;color:var(--muted);text-align:center;padding:10px">Aucun historique enregistré</div>'
+      : [...hist].reverse().map(h => `<div class="history-item"><div><div class="history-item-left">${h.type === 'anticipe' ? '💸 Rembt anticipé' : '✏️ Solde modifié'} ${h.note ? '· '+h.note : ''}</div><div class="history-item-date">${fmtDate(h.date)}</div></div><div class="history-item-right" style="color:${h.type === 'anticipe' ? 'var(--success)' : 'var(--accent)'}">${h.type === 'anticipe' ? '-' + fmt(h.montant) + ' €' : '→ ' + fmt(h.nouveauSolde) + ' €'}</div></div>`).join('');
+    const solde0 = solde <= 0;
+    html += `<div class="debt-card"${solde0 ? ' style="opacity:.55;filter:grayscale(.7)"' : ''}>
+      <div class="debt-top"><div><div class="debt-name">${c.emoji} ${c.nom}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${c.taeg ? 'TAEG '+c.taeg+'% · ' : ''}Échéance ${c.echeance}</div></div><span class="debt-badge" style="background:${c.badgeBg};color:${c.badgeColor}">${solde0 ? '✅ SOLDÉ' : c.badge}</span></div>
+      <div class="debt-stats"><div class="debt-stat"><div class="debt-stat-label">Restant dû</div><div class="debt-stat-val red">${fmt(solde)} €</div></div><div class="debt-stat"><div class="debt-stat-label">Mensualité</div><div class="debt-stat-val">${fmt(c.mensualite)} €</div></div><div class="debt-stat"><div class="debt-stat-label">Remboursé</div><div class="debt-stat-val" style="color:var(--success)">${fmt(rembourse)} €</div></div></div>
+      <div class="prog-wrap"><div class="prog-label"><span>${Math.round(pct)}% remboursé</span><span style="font-size:11px">${majLabel}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${c.barColor}"></div></div></div>
+      ${!solde0 ? `<div class="debt-actions"><button class="btn-action primary" onclick="openCreditModal('${c.id}','solde')">✏️ Modifier solde</button><button class="btn-action success" onclick="openCreditModal('${c.id}','anticipe')">💸 Rembt anticipé</button></div>` : `<div style="text-align:center;font-size:13px;color:var(--success);margin-top:10px;padding:8px;background:rgba(34,197,94,.08);border-radius:10px">🎉 Crédit soldé</div>`}
+      ${c.info ? `<div class="info-box" style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.15);color:#fca5a5">${c.info}</div>` : ''}
+      <div class="history-toggle" onclick="toggleHist('hist-${c.id}','arrow-${c.id}')">📋 Historique (${hist.length}) <span id="arrow-${c.id}">▼</span></div>
+      <div class="history-list" id="hist-${c.id}">${histHtml}</div>
+    </div>`;
+  });
+  saveCredits();
+  container.innerHTML = html;
+  document.getElementById('total-dette-val').textContent = fmt(totalDette) + ' €';
+  document.getElementById('total-mensualites').textContent = fmt(totalMensualites) + ' €';
+  document.getElementById('total-economise').textContent = totalRembourse > 0 ? `✅ ${fmt(totalRembourse)} € déjà remboursés` : '— Commence à enregistrer tes remboursements';
+  updateDashboard();
+}
+
+function toggleHist(listId, arrowId) {
+  const el = document.getElementById(listId);
+  const arr = document.getElementById(arrowId);
+  el.classList.toggle('open');
+  arr.textContent = el.classList.contains('open') ? '▲' : '▼';
+}
+
+function openCreditModal(id, tab) {
+  editingCreditId = id;
+  const c = CREDITS_INIT.find(x => x.id === id);
+  document.getElementById('credit-modal-title').textContent = c.emoji + ' ' + c.nom;
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('credit-solde-date').value = today;
+  document.getElementById('credit-anticipe-date').value = today;
+  document.getElementById('credit-new-solde').value = '';
+  document.getElementById('credit-anticipe-amount').value = '';
+  document.getElementById('credit-solde-note').value = '';
+  document.getElementById('credit-anticipe-note').value = '';
+  setCreditTab(tab);
+  document.getElementById('modal-credit').classList.add('open');
+}
+function closeCreditModal() { document.getElementById('modal-credit').classList.remove('open'); editingCreditId = null; }
+function setCreditTab(tab) {
+  document.getElementById('tab-btn-solde').className = 'tab-btn' + (tab==='solde' ? ' active-blue' : '');
+  document.getElementById('tab-btn-anticipe').className = 'tab-btn' + (tab==='anticipe' ? ' active-green' : '');
+  document.getElementById('tab-solde').style.display = tab==='solde' ? 'block' : 'none';
+  document.getElementById('tab-anticipe').style.display = tab==='anticipe' ? 'block' : 'none';
+}
+function saveCreditSolde() {
+  const nouveau = parseFloat(document.getElementById('credit-new-solde').value);
+  const date = document.getElementById('credit-solde-date').value;
+  const note = document.getElementById('credit-solde-note').value.trim();
+  if (isNaN(nouveau) || nouveau < 0) { alert('Saisis un montant valide'); return; }
+  if (!date) { alert('Sélectionne une date'); return; }
+  const ancien = credits[editingCreditId].solde;
+  credits[editingCreditId].historique.push({ type:'solde', date, ancienSolde:ancien, nouveauSolde:nouveau, note });
+  credits[editingCreditId].solde = nouveau;
+  saveCredits();
+  closeCreditModal();
+  renderDebts();
+}
+function saveCreditAnticipe() {
+  const montant = parseFloat(document.getElementById('credit-anticipe-amount').value);
+  const date = document.getElementById('credit-anticipe-date').value;
+  const note = document.getElementById('credit-anticipe-note').value.trim();
+  if (isNaN(montant) || montant <= 0) { alert('Saisis un montant valide'); return; }
+  if (!date) { alert('Sélectionne une date'); return; }
+  const ancien = credits[editingCreditId].solde;
+  const nouveau = Math.max(0, ancien - montant);
+  credits[editingCreditId].historique.push({ type:'anticipe', date, montant, ancienSolde:ancien, nouveauSolde:nouveau, note });
+  credits[editingCreditId].solde = nouveau;
+  saveCredits();
+  closeCreditModal();
+  renderDebts();
+}
+function updateDashboard() {
+  let totalDette = 0, totalMensualites = 0, actifs = 0;
+  CREDITS_INIT.forEach(c => {
+    if(!credits[c.id]) credits[c.id] = { solde: c.soldeInitial, historique: [] };
+    const s = Math.max(0, Number(credits[c.id].solde) || 0);
+    totalDette += s;
+    if (s > 0) { totalMensualites += c.mensualite; actifs++; }
+  });
+  const REVENUS = 5200, PENSION = 1100, FIXED = 593 + 200 + 57 + 400;
+  const totalCharges = totalMensualites + PENSION + FIXED;
+  const reste = REVENUS - totalCharges;
+  const ratio = ((totalMensualites + PENSION) / REVENUS * 100);
+  const score = Math.max(10, Math.min(100, Math.round(100 - ratio)));
+  document.getElementById('dash-reste').textContent = fmt(reste) + ' €';
+  document.getElementById('dash-reste').style.color = reste >= 1000 ? 'var(--accent)' : reste >= 500 ? 'var(--warning)' : 'var(--danger)';
+  document.getElementById('dash-charges').textContent = fmt(totalCharges) + ' €';
+  document.getElementById('dash-ratio').textContent = ratio.toFixed(1) + '%';
+  document.getElementById('dash-total').textContent = fmt(totalDette) + ' €';
+  document.getElementById('dash-credits-val').textContent = fmt(totalMensualites) + ' €';
+  document.getElementById('dash-credits-sub').textContent = actifs + ' crédit' + (actifs > 1 ? 's' : '') + ' actif' + (actifs > 1 ? 's' : '');
+  const sv = document.getElementById('score-val');
+  if (sv) { sv.textContent = score; document.getElementById('score-bar').style.width = score + '%'; }
+}
+function openTxModal() {
+  document.getElementById('modal-tx').classList.add('open');
+  document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+}
+function closeTxModal() {
+  document.getElementById('modal-tx').classList.remove('open');
+  document.getElementById('tx-amount').value = '';
+  document.getElementById('tx-desc').value = '';
+}
+function setType(t) {
+  currentType = t;
+  document.getElementById('btn-income').className = 'tab-btn' + (t==='income' ? ' active-income' : '');
+  document.getElementById('btn-expense').className = 'tab-btn' + (t==='expense' ? ' active-expense' : '');
+}
+function addTransaction() {
+  const amount = parseFloat(document.getElementById('tx-amount').value);
+  const desc = document.getElementById('tx-desc').value.trim() || 'Transaction';
+  const date = document.getElementById('tx-date').value;
+  if (!amount || !date) { alert('Montant et date requis'); return; }
+  transactions.unshift({ id:Date.now(), type:currentType, amount, desc, cat:currentCat, date });
+  localStorage.setItem('marc_tx', JSON.stringify(transactions));
+  closeTxModal();
+  renderTransactions();
+}
+function renderTransactions() {
+  const list = document.getElementById('tx-list');
+  if (!transactions.length) {
+    list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:40px;margin-bottom:8px">📋</div><div>Aucune transaction</div><div style="font-size:12px;margin-top:4px">Appuie sur + pour ajouter</div></div>';
+    document.getElementById('month-balance').textContent = '0 €';
+    document.getElementById('month-in').textContent = '0 €';
+    document.getElementById('month-out').textContent = '0 €';
+    return;
+  }
+  const groups = {};
+  let totalIn = 0, totalOut = 0;
+  const now = new Date();
+  const cm = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  transactions.forEach(tx => {
+    const m = tx.date.substring(0,7);
+    if (!groups[m]) groups[m] = [];
+    groups[m].push(tx);
+    if (m === cm) { if (tx.type==='income') totalIn += tx.amount; else totalOut += tx.amount; }
+  });
+  const bal = totalIn - totalOut;
+  document.getElementById('month-balance').textContent = (bal >= 0 ? '+' : '') + fmt(bal) + ' €';
+  document.getElementById('month-balance').style.color = bal >= 0 ? 'var(--success)' : 'var(--danger)';
+  document.getElementById('month-in').textContent = fmt(totalIn) + ' €';
+  document.getElementById('month-out').textContent = fmt(totalOut) + ' €';
+  let html = '';
+  Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach(m => {
+    const [y, mo] = m.split('-');
+    html += `<div class="month-header">${new Date(y, parseInt(mo)-1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</div>`;
+    groups[m].forEach(tx => {
+      const sign = tx.type==='income' ? '+' : '-';
+      const color = tx.type==='income' ? 'var(--success)' : 'var(--danger)';
+      const d = new Date(tx.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short'});
+      html += `<div class="tx-item" onclick="deleteTx(${tx.id})"><div style="width:36px;height:36px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${tx.cat.icon}</div><div class="tx-info"><div class="tx-name">${tx.desc}</div><div class="tx-date-lbl">${d} · ${tx.cat.name}</div></div><div class="tx-amt" style="color:${color}">${sign}${fmt(tx.amount)} €</div></div>`;
+    });
+  });
+  list.innerHTML = html;
+}
+function deleteTx(id) {
+  if (confirm('Supprimer cette transaction ?')) {
+    transactions = transactions.filter(t => t.id !== id);
+    localStorage.setItem('marc_tx', JSON.stringify(transactions));
+    renderTransactions();
+  }
+}
+function fmt(n) { return Number(n).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+function fmtDate(s) { if (!s) return '—'; return new Date(s+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); }
+
+document.getElementById('fab-btn').style.display = 'none';
+updateDashboard();
+</script>
+</body>
+</html>
